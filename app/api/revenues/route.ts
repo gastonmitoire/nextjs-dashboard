@@ -4,19 +4,9 @@ import { ErrorProps } from "next/error";
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
-    const data = await prisma.revenue.findMany({
-      select: {
-        month: true,
-      },
-    });
+    const data = await prisma.revenue.findMany();
 
-    return NextResponse.json(
-      { data },
-      {
-        status: 200,
-        headers: { "Set-Cookie": `token=` },
-      }
-    );
+    return NextResponse.json({ data });
   } catch (error: any) {
     console.error("Error:", error);
     const errorResponse: ErrorProps = {
