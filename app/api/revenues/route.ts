@@ -2,7 +2,7 @@ import prisma from "@/app/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
 import { ErrorProps } from "next/error";
 
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const data = await prisma.revenue.findMany();
 
