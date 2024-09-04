@@ -7,7 +7,7 @@ import {
   LatestInvoiceRaw,
 } from "./definitions";
 import { formatCurrency } from "./utils";
-import { Invoice, Prisma, Revenue } from "@prisma/client";
+import { Customer, Invoice, Prisma, Revenue } from "@prisma/client";
 import prisma from "./prisma";
 
 export async function fetchRevenue(): Promise<Revenue[]> {
@@ -225,16 +225,18 @@ export async function fetchInvoiceById(id: string) {
 
 export async function fetchCustomers() {
   try {
-    const data = await sql<CustomerField>`
-      SELECT
-        id,
-        name
-      FROM customers
-      ORDER BY name ASC
-    `;
+    const response: Pick<Customer, "id" | "name">[] =
+      await prisma.customer.findMany({
+        select: {
+          id: true,
+          name: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      });
 
-    const customers = data.rows;
-    return customers;
+    return response;
   } catch (err) {
     console.error("Database Error:", err);
     throw new Error("Failed to fetch all customers.");
