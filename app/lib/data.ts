@@ -141,7 +141,6 @@ export async function fetchFilteredInvoices(
       take: ITEMS_PER_PAGE,
       skip: offset,
     });
-    console.log("Fetched Invoices:", invoices);
 
     return invoices;
   } catch (error) {
@@ -200,23 +199,30 @@ export async function fetchInvoicesPages(query: string): Promise<number> {
 
 export async function fetchInvoiceById(id: string) {
   try {
-    const data = await sql<InvoiceForm>`
-      SELECT
-        invoices.id,
-        invoices.customer_id,
-        invoices.amount,
-        invoices.status
-      FROM invoices
-      WHERE invoices.id = ${id};
-    `;
+    const invoice: Pick<
+      Invoice,
+      "id" | "customerId" | "amount" | "status"
+    > | null = await prisma.invoice.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        customerId: true,
+        amount: true,
+        status: true,
+      },
+    });
 
-    const invoice = data.rows.map((invoice) => ({
+    if (!invoice) {
+      throw new Error("Invoice not found");
+    }
+
+    // Convertir el monto de centavos a dólares (asumiendo que la cantidad está en centavos)
+    const convertedInvoice = {
       ...invoice,
-      // Convert amount from cents to dollars
       amount: invoice.amount / 100,
-    }));
+    };
 
-    return invoice[0];
+    return convertedInvoice;
   } catch (error) {
     console.error("Database Error:", error);
     throw new Error("Failed to fetch invoice.");
