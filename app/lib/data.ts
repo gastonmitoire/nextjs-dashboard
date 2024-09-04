@@ -212,6 +212,7 @@ export async function fetchInvoiceById(id: string) {
       },
     });
 
+    console.log(invoice);
     if (!invoice) {
       throw new Error("Invoice not found");
     }
@@ -225,7 +226,6 @@ export async function fetchInvoiceById(id: string) {
     return convertedInvoice;
   } catch (error) {
     console.error("Database Error:", error);
-    throw new Error("Failed to fetch invoice.");
   }
 }
 
