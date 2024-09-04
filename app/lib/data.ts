@@ -12,8 +12,11 @@ import prisma from "./prisma";
 
 export async function fetchRevenue(): Promise<Revenue[]> {
   try {
+    console.log("Fetching revenue data...");
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const response: Revenue[] = await prisma.revenue.findMany();
 
+    console.log("Data fetch completed after 3 seconds.");
     return response;
   } catch (error) {
     console.error("Failed to fetch revenues:", error);
