@@ -42,33 +42,28 @@ export async function fetchLatestInvoices() {
 
 export async function fetchCardData() {
   try {
-    // Consulta para contar el número total de facturas
-    const invoiceCount = await prisma.invoice.count();
+    const [invoiceCount, customerCount, paidInvoices, pendingInvoices] =
+      await Promise.all([
+        prisma.invoice.count(),
+        prisma.customer.count(),
+        prisma.invoice.aggregate({
+          _sum: {
+            amount: true,
+          },
+          where: {
+            status: "paid",
+          },
+        }),
+        prisma.invoice.aggregate({
+          _sum: {
+            amount: true,
+          },
+          where: {
+            status: "pending",
+          },
+        }),
+      ]);
 
-    // Consulta para contar el número total de clientes
-    const customerCount = await prisma.customer.count();
-
-    // Consulta para sumar los montos de facturas pagadas
-    const paidInvoices = await prisma.invoice.aggregate({
-      _sum: {
-        amount: true,
-      },
-      where: {
-        status: "paid",
-      },
-    });
-
-    // Consulta para sumar los montos de facturas pendientes
-    const pendingInvoices = await prisma.invoice.aggregate({
-      _sum: {
-        amount: true,
-      },
-      where: {
-        status: "pending",
-      },
-    });
-
-    // Formateo de resultados
     const numberOfInvoices = invoiceCount ?? 0;
     const numberOfCustomers = customerCount ?? 0;
     const totalPaidInvoices = formatCurrency(paidInvoices._sum.amount ?? 0);
