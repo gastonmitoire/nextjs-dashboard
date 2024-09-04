@@ -12,18 +12,12 @@ import prisma from "./prisma";
 
 export async function fetchRevenue(): Promise<Revenue[]> {
   try {
-    const response = await fetch("http://localhost:3000/api/revenues");
+    const response: Revenue[] = await prisma.revenue.findMany();
 
-    if (!response.ok) {
-      console.error("Error fetching revenues:", response.statusText);
-      return [];
-    }
-
-    const { data }: { data: Revenue[] } = await response.json();
-    return data;
+    return response;
   } catch (error) {
     console.error("Failed to fetch revenues:", error);
-    return [];
+    throw new Error("Failed to fetch revenues data.");
   }
 }
 
@@ -39,37 +33,48 @@ export async function fetchLatestInvoices() {
       },
     });
 
-    console.log("DATA: ", response);
-
     return response;
   } catch (error) {
     console.error("Failed to fetch invoices:", error);
-    return [];
+    throw new Error("Failed to fetch invoices data.");
   }
 }
 
 export async function fetchCardData() {
   try {
-    // You can probably combine these into a single SQL query
-    // However, we are intentionally splitting them to demonstrate
-    // how to initialize multiple queries in parallel with JS.
-    const invoiceCountPromise = sql`SELECT COUNT(*) FROM invoices`;
-    const customerCountPromise = sql`SELECT COUNT(*) FROM customers`;
-    const invoiceStatusPromise = sql`SELECT
-         SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) AS "paid",
-         SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) AS "pending"
-         FROM invoices`;
+    // Consulta para contar el número total de facturas
+    const invoiceCount = await prisma.invoice.count();
 
-    const data = await Promise.all([
-      invoiceCountPromise,
-      customerCountPromise,
-      invoiceStatusPromise,
-    ]);
+    // Consulta para contar el número total de clientes
+    const customerCount = await prisma.customer.count();
 
-    const numberOfInvoices = Number(data[0].rows[0].count ?? "0");
-    const numberOfCustomers = Number(data[1].rows[0].count ?? "0");
-    const totalPaidInvoices = formatCurrency(data[2].rows[0].paid ?? "0");
-    const totalPendingInvoices = formatCurrency(data[2].rows[0].pending ?? "0");
+    // Consulta para sumar los montos de facturas pagadas
+    const paidInvoices = await prisma.invoice.aggregate({
+      _sum: {
+        amount: true,
+      },
+      where: {
+        status: "paid",
+      },
+    });
+
+    // Consulta para sumar los montos de facturas pendientes
+    const pendingInvoices = await prisma.invoice.aggregate({
+      _sum: {
+        amount: true,
+      },
+      where: {
+        status: "pending",
+      },
+    });
+
+    // Formateo de resultados
+    const numberOfInvoices = invoiceCount ?? 0;
+    const numberOfCustomers = customerCount ?? 0;
+    const totalPaidInvoices = formatCurrency(paidInvoices._sum.amount ?? 0);
+    const totalPendingInvoices = formatCurrency(
+      pendingInvoices._sum.amount ?? 0
+    );
 
     return {
       numberOfCustomers,
